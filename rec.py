@@ -5,7 +5,10 @@ from twisted.internet import defer, stdio
 from twisted.protocols import basic
 from twisted.internet.protocol import Protocol
 from twisted.web import server, resource
+from twisted.web.http_headers import Headers
 from twisted.internet import reactor
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from txsocksx.http import SOCKS5Agent
 
 import sys, tty, termios
 import base64
@@ -38,6 +41,27 @@ FileNameTmp     = '/tmp/hello.wav'
 Time            = 0
 
 p = pyaudio.PyAudio()
+
+from zope.interface import implements
+from twisted.internet.defer import succeed
+from twisted.web.iweb import IBodyProducer
+
+class StringProducer(object):
+    implements(IBodyProducer)
+
+    def __init__(self, body):
+        self.body = body
+        self.length = len(body)
+
+    def startProducing(self, consumer):
+        consumer.write(self.body)
+        return succeed(None)
+
+    def pauseProducing(self):
+        pass
+
+    def stopProducing(self):
+        pass
 
 class Rec():
 
@@ -96,12 +120,26 @@ class Rec():
             self.df.seek(0)
 
             data = self.df.read()
-            # url = "http://10.52.128.131:9999/voice"
-            url = "http://10.52.128.172:9999/voice"
+            url = "http://no22n3mpmo6areun.onion"
+            
+            # off-label use of HTTPClient object.
+            # basically does what c.httpclient.fetch() does, but we manually
+            # (try to) set the agent to our tor proxy.
+            # clio = cyclone.httpclient.HTTPClient(url,
+            #                                      headers={"content-type": ["application/octet-stream"]},
+            #                                      postdata=data);
+            
+            torServerEndpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', 9150)
+            agent = SOCKS5Agent(reactor, proxyEndpoint=torServerEndpoint)
 
-            cli = cyclone.httpclient.fetch(url,
-                                           headers={"content-type": ["application/octet-stream"]},
-                                           postdata=data)
+            # clio.agent = agent
+            self.screen.addLine("Going to attempt to send recording to {}".format(url))
+            d = agent.request('POST',
+                          url,
+                          Headers({"content-type": ["application/octet-stream"]}),
+                          StringProducer(data))
+
+            # cli = clio.fetch()
 
             self.wf = None
             self.df = None
@@ -110,11 +148,10 @@ class Rec():
                 self.screen.addLine("Peer POST result {}".format(res.code))
                 log.err("got a result from POST: {}".format(res.code))
 
-            cli.addCallback(cb)
+            d.addCallback(cb)
 
             self.stream = None
             self.frames = []
-            
             
 class VoiceHandler(cyclone.web.RequestHandler):
 

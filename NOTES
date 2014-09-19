@@ -1,7 +1,10 @@
 Requirements
 sudo apt-get install python-pyaudio
-socks
+socks (apt-get python-socksipy, pip SocksiPy-branch)
 stem
+PyYAML
+txsocksx
+
 
 Set up a hidden service in your torrc
 Enable control port in torrc
