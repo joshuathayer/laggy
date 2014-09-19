@@ -1,11 +1,11 @@
-# plough configuration. Thanks for playing!
+# laggy config.
 
 # where our service binds locally
 bind: "127.0.0.1:9998"
 
 # our public uri- this is what you share with friends
 # in production, this should be a .onion URI
-hostname: "yklclxp4f6gkgeoe.onion"
+hostname: "yklcltxp4f6gkgeoe.onion"
 
 #### DB
 # leveldb directory. not currently used.
