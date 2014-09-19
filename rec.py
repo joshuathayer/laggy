@@ -19,10 +19,11 @@ import curses, time, traceback, sys
 import curses.wrapper
 
 import display
-
-# fd = sys.stdin.fileno()
-# tty.setraw(sys.stdin.fileno())
-# old = termios.tcgetattr(fd)
+import argparse
+import yaml
+import tor
+import socks
+import socket
 
 SHORT_NORMALIZE = (1.0/32768.0)
 chunk           = 1024
@@ -142,8 +143,26 @@ def main():
     try:
         log.startLogging(open('./rec.log', 'w'))
 
+        parser = argparse.ArgumentParser()
+        parser.add_argument("config")
+        args = parser.parse_args()
+        
+        conffile = open(args.config,'r')
+        cfg = yaml.load(conffile)
+
+        # tor it up
+        host, port = cfg['bind'].split(':')
+        if cfg['disable_ths'] is False:
+            onion_host = tor.start_hidden_service(cfg, port, log)
+
+        # proxy
+        socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9150, True)
+        socket.socket = socks.socksocket
+
+        # audio recorder
         recorder = Rec()
 
+        # screen
         stdscr = curses.initscr() # initialize curses
         screen = display.Screen(stdscr, recorder)   # create Screen object
         stdscr.refresh()
@@ -152,12 +171,13 @@ def main():
 
         reactor.addReader(screen) # add screen object as a reader to the reactor
 
+        # http application
         application = cyclone.web.Application([
             (r"/voice", VoiceHandler)])
 
         application.screen = screen
 
-        reactor.listenTCP(9999, application)
+        reactor.listenTCP(int(port), application)
         reactor.run()
 
     finally:

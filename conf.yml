@@ -1,0 +1,28 @@
+# plough configuration. Thanks for playing!
+
+# where our service binds locally
+bind: "127.0.0.1:9998"
+
+# our public uri- this is what you share with friends
+# in production, this should be a .onion URI
+#uri: "http://127.0.0.1:9998"
+uri: "http://foobar.onion"
+
+#### DB
+# leveldb directory
+db: './laggy_db'
+
+#### TOR
+# directory used for tor hidden service config
+ths_dir: '/var/lib/tor/laggy'
+
+# control password
+tor_control_password: 'greatpassword'
+
+# set to True if you're debugging and want to completely forego Tor usage
+disable_ths: False
+
+# set to True if you want to use Tor, but don't want to try to configure
+# it for hidden services automatically (you've edited your torrc to
+# add hidden service config for plough)
+configure_ths: False
