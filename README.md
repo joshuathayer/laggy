@@ -18,3 +18,13 @@ Ensure your control port is configured as well. Restart or HUP tor, and ensure y
 Next, edit config.yml to reflect your situation. Importantly, you'll want to update the `hostname` attribute to be the hostname of the service you just configured. Depending on if you're using TBB or just normal tor, you may have to update the proxy port.
 
 Laggy requires a number of python packages, including pyaudio, socks, PyYAML, and txsocksx. On debian, `sudo apt-get install python-pyaudio python-socksipy python-yaml` will get you started. PyYAML and txsocksx might be better installed via pip.
+
+## running
+
+Once you're all configured, laggy can be started with:
+
+    ./laggy --config conf.yaml <peer-url.onion>
+
+At the moment, peer discover is done out-of-band: you must exchange your service address with your peer before you can communicate using laggy.
+
+Once laggy starts, usage is simple: start recording a message by pressing the space bar. Stop recording by pressing the space bar again. When you stop recording, the message is sent automatically to your peer.
