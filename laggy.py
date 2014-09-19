@@ -71,6 +71,13 @@ class Sender():
         self.peer = None
         self.screen = None
 
+    def alert(self, data):
+        url = "http://{}/alert".format(self.peer)
+        d = agent.request('POST',
+                          url,
+                          Headers({"content-type": ["application/octet-stream"]}),
+                          StringProducer(data))
+        
     def send(self, data):
         url = "http://{}/voice".format(self.peer)
                         
@@ -147,6 +154,8 @@ class Rec():
             self.wf = wf
             self.df = df
 
+            self.sender.alert("recording.")
+
             self.do_rec()
         else:
             self.stream.close() # not sure why, but stop_stream hangs
@@ -154,10 +163,21 @@ class Rec():
             self.df.seek(0)
 
             data = self.df.read()
+
+            self.sender.alert("done recording.")
             self.sender.send(data)
 
             self.stream = None
             # self.frames = []
+
+class AlertHandler(cyclone.web.RequestHandler):
+
+    def post(self):
+        req = self.request
+        data = req.body
+
+        self.application.screen.addLine("Received message from peer: {}".format(body))
+
             
 class VoiceHandler(cyclone.web.RequestHandler):
 
@@ -224,7 +244,9 @@ def main():
 
         # http application
         application = cyclone.web.Application([
-            (r"/voice", VoiceHandler)])
+            (r"/voice", VoiceHandler),
+            (r"/alert", AlertHandler)
+        ])
 
         application.screen = screen
 
