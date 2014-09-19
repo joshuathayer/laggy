@@ -17,11 +17,6 @@ def choose_port():
 # this is an artifact from testing... should likely go away
 def get_hidden_service_dir(ths_dir, port):
     return ths_dir
-    # return "/tmp/plough_hidden_service_{}".format(port)
-
-def get_hidden_service_hostname(ths_dir, port):
-    hostname_file = '{0}/hostname'.format(get_hidden_service_dir(ths_dir, port))
-    return open(hostname_file, 'r').read().strip()
 
 def start_hidden_service(cfg, port, log):
     # connect to the tor controlport
@@ -55,7 +50,7 @@ def start_hidden_service(cfg, port, log):
         
     if cfg['configure_ths'] is False:
         log.err("Avoiding hidden service configuration: already done, eh?")
-        onion_host = get_hidden_service_hostname(ths_dir, port)
+        onion_host = cfg['hostname']
         log.err("Forwarding onion url {}:80 to 127.0.0.1:{}".format(onion_host, port))
         return True
 
