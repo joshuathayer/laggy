@@ -201,30 +201,58 @@ class AlertHandler(cyclone.web.RequestHandler):
 
         self.application.screen.addLine("Received message from peer: {}".format(data))
 
-            
-class VoiceHandler(cyclone.web.RequestHandler):
 
-    def post(self):
-        req = self.request
+class Player():
+    def __init__(self):
+        self.messages = []
+        self.am_playing = False
 
-        self.application.screen.addLine("Received {} bytes from peer.".format(len(req.body)))
-        
+    def add_message(self, data):
+        self.messages.append(data)
+
+        if not self.am_playing:
+            self.play()
+
+    def play(self):
+        if len(self.messages):
+            data = self.messages.pop()
+        else:
+            return
+
         df = StringIO.StringIO()
-        df.write(req.body)
+        df.write(data)
         df.seek(0)
         wf = wave.open(df, 'rb')
  
         def cb(in_data, frame_count, time_info, status):
             data = wf.readframes(frame_count)
+
+            if not data:
+                self.am_playing = False
+                self.play()
+
             return (data, pyaudio.paContinue)
-        
+
+        self.am_playing = True
         stream = p.open(format            = FORMAT,
                         channels          = CHANNELS,
                         rate              = RATE,
                         output            = True,
                         frames_per_buffer = chunk,
                         stream_callback   = cb)
+            
+class VoiceHandler(cyclone.web.RequestHandler):
+    def initialize(self, player):
+        self.player = player
 
+    def post(self):
+        req = self.request
+
+        self.application.screen.addLine("Received {} bytes from peer.".format(len(req.body)))
+
+        self.player.add_message(req.body)
+        
+        
 def main():
     try:
         log.startLogging(open('./rec.log', 'w'))
@@ -249,6 +277,9 @@ def main():
         # audio recorder
         recorder = Rec()
 
+        # audio player
+        player = Player()
+
         # sender, sends data to peer
         sender = Sender(cfg)
         sender.peer = args.peer
@@ -267,7 +298,7 @@ def main():
 
         # http application
         application = cyclone.web.Application([
-            (r"/voice", VoiceHandler),
+            (r"/voice", VoiceHandler, dict(player=player)),
             (r"/alert", AlertHandler)
         ])
 
