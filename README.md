@@ -23,7 +23,7 @@ Laggy requires a number of python packages, including pyaudio, socks, PyYAML, an
 
 Once you're all configured, laggy can be started with:
 
-    ./laggy --config conf.yaml <peer-url.onion>
+    ./laggy.py --config conf.yaml <peer-url.onion>
 
 At the moment, peer discover is done out-of-band: you must exchange your service address with your peer before you can communicate using laggy.
 
