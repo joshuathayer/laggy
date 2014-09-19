@@ -79,8 +79,8 @@ class Sender():
 
     def alert(self, data):
         self.ensure_agent()
-
-        log.err("alerting peer")
+        
+        self.screen.addLine("Alerting peer.")
 
         url = "http://{}/alert".format(self.peer)
         d = self.agent.request('POST',
@@ -196,6 +196,8 @@ class AlertHandler(cyclone.web.RequestHandler):
     def post(self):
         req = self.request
         data = req.body
+
+        log.err("got alert {}".format(data))
 
         self.application.screen.addLine("Received message from peer: {}".format(data))
 
