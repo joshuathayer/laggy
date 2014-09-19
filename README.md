@@ -17,7 +17,7 @@ Ensure your control port is configured as well. Restart or HUP tor, and ensure y
 
 Next, edit config.yml to reflect your situation. Importantly, you'll want to update the `hostname` attribute to be the hostname of the service you just configured. Depending on if you're using TBB or just normal tor, you may have to update the proxy port.
 
-Laggy requires a number of python packages, including pyaudio, socks, PyYAML, and txsocksx. On debian, `sudo apt-get install python-pyaudio python-socksipy python-yaml` will get you started. PyYAML and txsocksx might be better installed via pip.
+Laggy requires a number of python packages, including pyaudio, socks, PyYAML, cyclone, and txsocksx. On debian, `sudo apt-get install python-pyaudio python-socksipy python-yaml python-cyclone` will get you started. PyYAML and txsocksx might be better installed via pip.
 
 ## running
 

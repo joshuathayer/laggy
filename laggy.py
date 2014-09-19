@@ -70,15 +70,42 @@ class Sender():
         self.cfg = cfg
         self.peer = None
         self.screen = None
+        self.agent = None
 
+    def ensure_agent(self):
+        if self.agent is None:
+            torServerEndpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', self.cfg['tor_proxy_port'])
+            self.agent = SOCKS5Agent(reactor, proxyEndpoint=torServerEndpoint)
+
+    def alert(self, data):
+        self.ensure_agent()
+        
+        self.screen.addLine("Alerting peer.")
+
+        url = "http://{}/alert".format(self.peer)
+        d = self.agent.request('POST',
+                          url,
+                          Headers({"content-type": ["application/octet-stream"]}),
+                          StringProducer(data))
+
+        def cb(res):
+            self.screen.addLine("Peer alert POST result {}".format(res.code))
+            log.err("got a result from POST: {}".format(res.code))
+        
+        def ecb(res):
+            self.screen.addLine("Peer alert POST resuled in error {}".format(res))
+            log.err("got a error from POST: {}".format(res))
+
+        d.addCallback(cb)
+        d.addErrback(ecb)
+        
     def send(self, data):
+        self.ensure_agent()
+        
         url = "http://{}/voice".format(self.peer)
-                        
-        torServerEndpoint = TCP4ClientEndpoint(reactor, '127.0.0.1', self.cfg['tor_proxy_port'])
-        agent = SOCKS5Agent(reactor, proxyEndpoint=torServerEndpoint)
         
         self.screen.addLine("Going to attempt to send recording to {}".format(url))
-        d = agent.request('POST',
+        d = self.agent.request('POST',
                         url,
                           Headers({"content-type": ["application/octet-stream"]}),
                           StringProducer(data))
@@ -96,6 +123,7 @@ class Sender():
 
         d.addCallback(cb)
         d.addErrback(ecb)
+
 class Rec():
 
     def __init__(self):
@@ -147,6 +175,8 @@ class Rec():
             self.wf = wf
             self.df = df
 
+            self.sender.alert("recording.")
+
             self.do_rec()
         else:
             self.stream.close() # not sure why, but stop_stream hangs
@@ -154,10 +184,23 @@ class Rec():
             self.df.seek(0)
 
             data = self.df.read()
+
+            self.sender.alert("done recording.")
             self.sender.send(data)
 
             self.stream = None
             # self.frames = []
+
+class AlertHandler(cyclone.web.RequestHandler):
+
+    def post(self):
+        req = self.request
+        data = req.body
+
+        log.err("got alert {}".format(data))
+
+        self.application.screen.addLine("Received message from peer: {}".format(data))
+
             
 class VoiceHandler(cyclone.web.RequestHandler):
 
@@ -224,7 +267,9 @@ def main():
 
         # http application
         application = cyclone.web.Application([
-            (r"/voice", VoiceHandler)])
+            (r"/voice", VoiceHandler),
+            (r"/alert", AlertHandler)
+        ])
 
         application.screen = screen
 
