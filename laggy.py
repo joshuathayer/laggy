@@ -1,5 +1,13 @@
 #!/usr/bin/python
 
+from PyQt4 import QtCore, QtGui
+import gui
+import sys
+
+app = QtGui.QApplication(sys.argv)
+import qt4reactor
+qt4reactor.install()
+
 from twisted.python import log
 from twisted.internet.defer import Deferred
 from twisted.internet import defer, stdio
@@ -19,7 +27,7 @@ import wave
 import cyclone.httpclient
 import cyclone.jsonrpc
 
-import curses, time, traceback, sys
+import curses, time, traceback
 import curses.wrapper
 
 import display
@@ -29,6 +37,7 @@ import tor
 import rec
 import socks
 import socket
+
 
 from zope.interface import implements
 from twisted.internet.defer import succeed
@@ -186,10 +195,13 @@ class VoiceHandler(cyclone.web.RequestHandler):
 
         self.player.add_message(req.body)
         
-        
 def main():
     try:
         log.startLogging(open('./rec.log', 'w'))
+
+        window = gui.LaggyGui(reactor)
+        
+        window.show()
 
         parser = argparse.ArgumentParser()
         parser.add_argument("--config", dest="config", nargs=1)
@@ -221,6 +233,8 @@ def main():
         recorder = rec.Rec()
         recorder.log = log
 
+        window.recorder = recorder
+
         # audio player
         player = Player()
 
@@ -233,14 +247,14 @@ def main():
         recorder.sender = sender
 
         # screen
-        stdscr = curses.initscr() # initialize curses
-        screen = display.Screen(stdscr, recorder)   # create Screen object
-        stdscr.refresh()
+        # stdscr = curses.initscr() # initialize curses
+        # screen = display.Screen(stdscr, recorder)   # create Screen object
+        # stdscr.refresh()
 
-        recorder.screen = screen
-        sender.screen   = screen
+        recorder.screen = window
+        sender.screen   = window
 
-        reactor.addReader(screen) # add screen object as a reader to the reactor
+        # reactor.addReader(screen) # add screen object as a reader to the reactor
 
         # http application
         application = cyclone.web.Application([
@@ -248,7 +262,7 @@ def main():
             (r"/alert", AlertHandler)
         ])
 
-        application.screen = screen
+        application.screen = window
 
         reactor.listenTCP(int(port), application)
         reactor.run()

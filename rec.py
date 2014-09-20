@@ -68,7 +68,7 @@ class Rec():
             self.df = df
 
             self.sender.alert("recording.")
-
+    
             self.do_rec()
         else:
             self.stream.close() # not sure why, but stop_stream hangs
