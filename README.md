@@ -19,12 +19,18 @@ Next, edit config.yml to reflect your situation. Importantly, you'll want to upd
 
 Laggy requires a number of python packages, including pyaudio, socks, PyYAML, cyclone, and txsocksx. On debian, `sudo apt-get install python-pyaudio python-socksipy python-yaml python-cyclone` will get you started. PyYAML and txsocksx might be better installed via pip.
 
+Finally, copy `roster-sample.yml` to `roster.yml`.
+
+## peers
+
+At the moment, peer discover is done out-of-band: you must exchange your service address with your peer before you can communicate using laggy.
+
+Once you have a peer's address, add it to your `conf.yml` file, following the existing format (the file must remain valid yaml).
+
 ## running
 
 Once you're all configured, laggy can be started with:
 
-    ./laggy.py --config conf.yaml <peer-url.onion>
-
-At the moment, peer discover is done out-of-band: you must exchange your service address with your peer before you can communicate using laggy.
+    ./laggy.py --config conf.yaml "peer name from roster"
 
 Once laggy starts, usage is simple: start recording a message by pressing the space bar. Stop recording by pressing the space bar again. When you stop recording, the message is sent automatically to your peer.
