@@ -129,10 +129,11 @@ def configure_app():
     conffile = open(args.config[0],'r')
     cfg = yaml.load(conffile)
     
-    ident = card.read_card(cfg['identity'])
+    ident_pub = card.read_card(cfg['identity_pub'])
+    ident = card.read_card(cfg['identity_priv'])
     peer = card.read_card(args.peer)
 
-    log.err("You are {}. You wish to communicate with {}.".format(ident['service'], peer['service']))
+    log.err("You are {}. You wish to communicate with {}.".format(ident_pub['service'], peer['service']))
 
     d = Deferred()
     tor.bootstrap_tor(cfg, d.callback)
@@ -168,7 +169,7 @@ def configure_app():
     
     # crypto
     crypt = crypto.Crypto()
-    crypt.priv_key_fn = "id_rsa"
+    crypt.my_key_data = ident['RSA']
     
     send.crypto = crypt
     

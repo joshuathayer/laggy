@@ -7,8 +7,10 @@ from base64 import b64encode, b64decode
 
 class Crypto():
     def __init__(self):
-        self.pub_key_fn  = None
-        self.priv_key_fn = None
+        # self.pub_key_fn  = None
+        # self.priv_key_fn = None
+        self.my_key_data = None
+        self.their_key_data = None
         self.key         = None
 
     def generate_key(self):
@@ -19,14 +21,6 @@ class Crypto():
 
         self.key = new_key
         return new_key, private_key, public_key
-        # f = open('mykey.pem','w')
-        # f.write(RSA.exportKey('PEM'))
-        # f.close()
-        # f = open('mykey.pem','r')
-        
-        # tor.bootstrap_tor(cfg, setup_complete)
-        # reactor.run()
-
 
     def sign_data(self, data):
         """
@@ -34,7 +28,8 @@ class Crypto():
         param: package Data to be signed
         return: base64 encoded signature
         """
-        key = open(self.priv_key_fn, "r").read()
+        # key = open(self.priv_key_fn, "r").read()
+        key = self.my_key_data
         rsakey = RSA.importKey(key)
         signer = PKCS1_v1_5.new(rsakey)
         digest = SHA256.new()
@@ -42,7 +37,7 @@ class Crypto():
         sign = signer.sign(digest)
         return b64encode(sign)
 
-    def verify_sign(self, public_key_loc, signature, data):
+    def verify_sign(self, their_key_data, signature, data):
         '''
         Verifies with a public key from whom the data came that it was indeed
         signed by their private key
@@ -54,8 +49,8 @@ class Crypto():
         from Crypto.Signature import PKCS1_v1_5
         from Crypto.Hash import SHA256
         from base64 import b64decode
-        pub_key = open(public_key_loc, "r").read()
-        rsakey = RSA.importKey(pub_key)
+        
+        rsakey = RSA.importKey(pub_key_data)
         signer = PKCS1_v1_5.new(rsakey)
         digest = SHA256.new()
         # Assumes the data is base64 encoded to begin with
