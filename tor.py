@@ -1,74 +1,33 @@
-from stem.control import Controller
-from stem import SocketError
+import txtorcon
+from twisted.internet import defer, reactor
+from twisted.internet.endpoints import TCP4ServerEndpoint
+from twisted.python import log
+import functools
 
-import socket
-import socks
-import stem
+# config tor via txtorcon.
+# thanks https://github.com/meejah/txtorcon/blob/master/examples/launch_tor_with_hiddenservice.py
+def updates(prog, tag, summary):
+    log.err("{}%: {}".format(prog, summary))
 
-class NoTor(Exception):
-    pass
+def setup_failed(arg):
+    log.err("tor setup failure: {}".format(arg))
+    reactor.stop()
 
-# with thanks to onionshare
-def choose_port():
-    # let the OS choose a port
-    return
-    return port
-
-# this is an artifact from testing... should likely go away
-def get_hidden_service_dir(ths_dir, port):
-    return ths_dir
-
-def start_hidden_service(cfg, port, log):
-    # connect to the tor controlport
-    controlports = [9051, 9151]
-    controller = False
+def bootstrap_tor(cfg, cb):
+    hs_port               = cfg['local_port']
+    hs_public_port        = 80
+    hs_temp               = cfg['ths_dir']
     
-    ths_dir = cfg['ths_dir']
+    config                = txtorcon.TorConfig()
+    config.SOCKSPort      = cfg['tor_proxy_port']
+    config.HiddenServices = [txtorcon.HiddenService(config, hs_temp, [str(80) + " 127.0.0.1:" + str(hs_port)])]
+    config.save()
 
-    for controlport in controlports:
-        try:
-            if controller:
-                pass
-            log.err("trying {}".format(controlport))
-            controller = Controller.from_port(port=controlport)
-            break
-        except SocketError:
-            pass
+    d = txtorcon.launch_tor(config, reactor, progress_updates=updates)
 
-    if not controller:
-        raise NoTor("No TOR!")
-        sys.exit()
+    def inner_cb(proto):
+        log.err("in inner cb")
+        cb([config, proto])
 
-    try:
-        controller.authenticate()
-    except stem.connection.MissingPassword:
-        try:
-            controller.authenticate_password(cfg['tor_control_password'])
-        except stem.connection.PasswordAuthFailed:
-            log.err("tor control password failed")
-            raise NoTor("bad password")
-        
-    if cfg['configure_ths'] is False:
-        log.err("Avoiding hidden service configuration: already done, eh?")
-        onion_host = cfg['hostname']
-        log.err("Forwarding onion url {}:80 to 127.0.0.1:{}".format(onion_host, port))
-        return True
-
-    # everything below here is hosed. see https://trac.torproject.org/projects/tor/ticket/12533
-    # just configure ths in your torrc for now
-    try:
-        print controller.get_conf('HiddenServiceDir', multiple=True)
-    except Exception, e:
-        print "could not get options:",e
-    
-    hs_dir = get_hidden_service_dir(ths_dir, port)
-    hs_port = '80 127.0.0.1:{0}'.format(port)
-    
-    controller.set_options([
-        ('HiddenServiceDir', hs_dir),
-        ('HiddenServicePort', hs_port)
-    ])
-
-    onion_host = get_hidden_service_hostname(ths_dir, port)
-    print "!!! forwarding onion url {}:80 to 127.0.0.1:{}".format(onion_host, port)
-    return onion_host
+    d.addCallback(inner_cb)
+    d.addErrback(setup_failed)
